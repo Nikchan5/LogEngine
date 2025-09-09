@@ -2,13 +2,29 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-
+#include "shaderClass.h"
+#include "VAO.h"
+#include "VBO.h"
+#include "EBO.h"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
-#define WINDOW_TITLE "Application"
+#define WINDOW_TITLE "LogEngine v0.2"
 
+// Вершины квадрата (используем 4 вершины, так как рисуем квадрат)
+GLfloat vertices[] = {
+    // Координаты       // Цвета
+    -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // Нижний левый, красный
+     0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // Нижний правый, зелёный
+     0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f, // Верхний правый, синий
+    -0.5f,  0.5f, 0.0f,  1.0f, 1.0f, 1.0f  // Верхний левый, белый
+};
 
+// Индексы для рисования квадрата из двух треугольников
+GLuint indices[] = {
+    0, 1, 2, // Первый треугольник
+    2, 3, 0  // Второй треугольник
+};
 
 int main() {
     // Инициализация GLFW
@@ -36,53 +52,38 @@ int main() {
         return -1;
     }
 
-    // Вершины треугольника
-    GLfloat vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-         -0.5, 0.5f, 0.0f
-    };
+    Shader shaderProgram("shader.vert", "shader.frag");
 
-    GLuint indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
+    VAO VAO1;
+    VAO1.Bind();
 
-    GLuint VAO, VBO;
+    VBO VBO1(vertices, sizeof(vertices));
+    EBO EBO1(indices, sizeof(indices));
 
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    VAO1.LinkVBO(VBO1, 0);
 
-    // Привязка VAO и VBO
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    VAO1.Unbind();
+    VBO1.Unbind();
+    EBO1.Unbind();
 
     // Главный цикл
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.3f, 0.1f, 0.8f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        shaderProgram.Activate(); // Исправлена опечатка: shaderPorgram -> shaderProgram
+        VAO1.Bind();
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // Очистка ресурсов
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
+    VAO1.Delete();
+    VBO1.Delete();
+    EBO1.Delete();
+    shaderProgram.Delete(); // Добавлено удаление шейдерной программы
 
     glfwDestroyWindow(window);
     glfwTerminate();
